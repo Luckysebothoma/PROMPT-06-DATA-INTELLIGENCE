@@ -1,0 +1,20 @@
+{
+  "name": "ai-gateway-6-of-10-data-intelligence",
+  "version": "0.1.0",
+  "description": "AI Gateway - Stack 6 of 10 - Data Intelligence, Recovery, JSON Structuring, Sanitization and Chopping",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "worker": "node src/queue/worker.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "pg": "^8.12.0",
+    "ioredis": "^5.4.1",
+    "bullmq": "^5.12.0",
+    "prom-client": "^15.1.3",
+    "uuid": "^9.0.1",
+    "node-fetch": "^2.7.0",
+    "dotenv": "^16.4.5"
+  }
+}
