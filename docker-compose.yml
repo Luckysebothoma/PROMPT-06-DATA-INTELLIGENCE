@@ -1,49 +1,16 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: ai_gateway_6_of_10_postgres
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-ai_gateway_day6}
-      POSTGRES_USER: ${POSTGRES_USER:-ai_gateway}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
-    volumes:
-      - day6_postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ai_gateway} -d ${POSTGRES_DB:-ai_gateway_day6}"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    networks:
-      - ai_gateway_6_net
-
-  redis:
-    image: redis:7-alpine
-    container_name: ai_gateway_6_of_10_redis
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    networks:
-      - ai_gateway_6_net
 
   api:
     build: .
     container_name: ai_gateway_6_of_10_api
     env_file: .env
     environment:
-      POSTGRES_HOST: postgres
-      REDIS_HOST: redis
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      REDIS_HOST: ${REDIS_HOST}
     ports:
       - "${DAY6_API_PORT:-4408}:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     networks:
-      - ai_gateway_6_net
-      - ai_gateway_shared_net
+      - ai-gateway-net
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
       interval: 10s
@@ -56,43 +23,11 @@ services:
     command: ["node", "src/queue/worker.js"]
     env_file: .env
     environment:
-      POSTGRES_HOST: postgres
-      REDIS_HOST: redis
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      REDIS_HOST: ${REDIS_HOST}
       WORKER_METRICS_PORT: "8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     networks:
-      - ai_gateway_6_net
-      - ai_gateway_shared_net
-
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: ai_gateway_6_of_10_prometheus
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - day6_prometheus_data:/prometheus
-    ports:
-      - "${DAY6_PROMETHEUS_PORT:-9408}:9090"
-    depends_on:
-      - api
-    networks:
-      - ai_gateway_6_net
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: ai_gateway_6_of_10_grafana
-    volumes:
-      - ./grafana/provisioning:/etc/grafana/provisioning:ro
-      - day6_grafana_data:/var/lib/grafana
-    ports:
-      - "${DAY6_GRAFANA_PORT:-3408}:3000"
-    depends_on:
-      - prometheus
-    networks:
-      - ai_gateway_6_net
+      - ai-gateway-net
 
 volumes:
   day6_postgres_data:
@@ -100,11 +35,7 @@ volumes:
   day6_grafana_data:
 
 networks:
-  ai_gateway_6_net:
-    driver: bridge
-  # Attaches to the existing platform network so Stack 6 can reach Stack 3/4/5
-  # by container name. If your existing stacks use a different shared network
-  # name, change this to match (e.g. `docker network ls`).
-  ai_gateway_shared_net:
+  ai-gateway-net:
     external: true
-    name: ${SHARED_NETWORK_NAME:-ai_gateway_shared_net}
+  databases:
+    external: true
